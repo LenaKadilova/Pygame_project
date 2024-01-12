@@ -4,7 +4,7 @@ import sys
 from random import choice
 
 FPS = 60
-RES = WIDTH, HEIGHT = 740, 740
+RES = WIDTH, HEIGHT = 723, 723
 TILE = 40
 cols, rows = WIDTH // TILE, HEIGHT // TILE
 color = (102, 0, 0)
@@ -186,7 +186,7 @@ walls_collide_list = sum([cell.get_rects() for cell in maze], [])
 
 if __name__ == '__main__':
     pygame.init()
-    size = WIDTH, HEIGHT = 740, 740
+    size = WIDTH, HEIGHT = 723, 723
     screen = pygame.display.set_mode(size)
     clock = pygame.time.Clock()
     start_screen()
@@ -215,6 +215,6 @@ if __name__ == '__main__':
 
         # draw player
         game_surface.blit(player_img, player_rect)
-        game_surface.blit(Exit, (WIDTH - 55, HEIGHT - 55))
+        game_surface.blit(Exit, (WIDTH - 40, HEIGHT - 40))
         pygame.display.flip()
         clock.tick(FPS)
