@@ -1,3 +1,5 @@
+import random
+
 import pygame
 import os
 import sys
@@ -153,6 +155,11 @@ def is_collide(x, y):
         return False
     return True
 
+def enemy_is_collide(x, y):
+    tmp_rect = enemy_rect.move(x, y)
+    if tmp_rect.collidelist(walls_collide_list) == -1:
+        return False
+    return True
 
 def is_game_over():
     pass
@@ -180,6 +187,14 @@ player_rect.center = TILE // 2, TILE // 2
 directions = {'a': (-player_speed, 0), 'd': (player_speed, 0), 'w': (0, -player_speed), 's': (0, player_speed)}
 keys = {'a': pygame.K_a, 'd': pygame.K_d, 'w': pygame.K_w, 's': pygame.K_s}
 direction = (0, 0)
+
+enemy_img = load_image('кабан.png')
+enemy_img = pygame.transform.scale(enemy_img, (TILE - 2 * maze[0].thickness, TILE - 2 * maze[0].thickness))
+enemy_rect = enemy_img.get_rect()
+enemy_rect.center = TILE // 2, TILE // 2
+
+enemy_rect.move_ip(random.randint(0, rows) * TILE, random.randint(0, cols) * TILE)
+enemy_direction = (1, 0)
 
 # collision list
 walls_collide_list = sum([cell.get_rects() for cell in maze], [])
@@ -210,11 +225,24 @@ if __name__ == '__main__':
         if not is_collide(*direction):
             player_rect.move_ip(direction)
 
+        if not enemy_is_collide(*enemy_direction):
+            enemy_rect.move_ip(enemy_direction)
+        else:
+            x = random.choice((-1, 0, 1))
+            if x == 0:
+                y = random.choice((-1, 1))
+            else:
+                y = 0
+            enemy_direction = (x, y)
+
+        if player_rect.colliderect(enemy_rect):
+            pygame.quit()
         # draw maze
         [cell.draw(game_surface) for cell in maze]
 
         # draw player
         game_surface.blit(player_img, player_rect)
+        game_surface.blit(enemy_img, enemy_rect)
         game_surface.blit(Exit, (WIDTH - 40, HEIGHT - 40))
         pygame.display.flip()
         clock.tick(FPS)
