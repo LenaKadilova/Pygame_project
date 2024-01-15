@@ -13,7 +13,7 @@ color = (102, 0, 0)
 
 
 def load_image(name, colorkey=None):
-    fullname = os.path.join('data', name)
+    fullname = os.path.join(name)
     # если файл не существует, то выходим
     if not os.path.isfile(fullname):
         print(f"Файл с изображением '{fullname}' не найден")
@@ -31,14 +31,14 @@ def start_screen():
     intro_text = ["КоBun"]
     fon = pygame.transform.scale(load_image('кобан2D.png'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
-    text_coord = 50
+    font = pygame.font.Font(None, 180)
+    text_coord = 280
     for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('black'))
+        string_rendered = font.render(line, 1, pygame.Color('white'))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
-        intro_rect.x = 10
+        intro_rect.x = 145
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
 
@@ -155,12 +155,6 @@ def is_collide(x, y):
         return False
     return True
 
-def enemy_is_collide(x, y):
-    tmp_rect = enemy_rect.move(x, y)
-    if tmp_rect.collidelist(walls_collide_list) == -1:
-        return False
-    return True
-
 def is_game_over():
     pass
 
@@ -188,16 +182,42 @@ directions = {'a': (-player_speed, 0), 'd': (player_speed, 0), 'w': (0, -player_
 keys = {'a': pygame.K_a, 'd': pygame.K_d, 'w': pygame.K_w, 's': pygame.K_s}
 direction = (0, 0)
 
-enemy_img = load_image('кабан.png')
-enemy_img = pygame.transform.scale(enemy_img, (TILE - 2 * maze[0].thickness, TILE - 2 * maze[0].thickness))
-enemy_rect = enemy_img.get_rect()
-enemy_rect.center = TILE // 2, TILE // 2
-
-enemy_rect.move_ip(random.randint(0, rows) * TILE, random.randint(0, cols) * TILE)
-enemy_direction = (1, 0)
-
 # collision list
 walls_collide_list = sum([cell.get_rects() for cell in maze], [])
+
+
+class Enemy:  # Кабан
+    def __init__(self):
+        self.enemy_img = load_image('кабан.png')
+        self.enemy_img = pygame.transform.scale(self.enemy_img, (TILE - 2 * maze[0].thickness,
+                                                                 TILE - 2 * maze[0].thickness))
+        self.enemy_rect = self.enemy_img.get_rect()
+        self.enemy_rect.center = TILE // 2, TILE // 2
+
+        self.enemy_rect.move_ip(random.randint(0, rows) * TILE, random.randint(0, cols) * TILE)
+        self.enemy_direction = (1, 0)
+
+    def enemy_is_collide(self, x, y):
+        tmp_rect = self.enemy_rect.move(x, y)
+        if tmp_rect.collidelist(walls_collide_list) == -1:
+            return False
+        return True
+
+    def enemy_move(self, enemy_direction):
+        if not self.enemy_is_collide(*enemy_direction):
+            self.enemy_rect.move_ip(enemy_direction)
+        else:
+            x = enemy_direction[0]
+            y = enemy_direction[1]
+            if x == 0:
+                x = random.choice((-1, 1))
+                y = 0
+            else:
+                y = random.choice((-1, 1))
+                x = 0
+            enemy_direction = (x, y)
+        return enemy_direction
+
 
 if __name__ == '__main__':
     pygame.init()
@@ -205,6 +225,10 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode(size)
     clock = pygame.time.Clock()
     start_screen()
+    level = 5
+    enemy = []
+    for i in range(level):
+        enemy.append(Enemy())
     while True:
         surface.blit(game_surface, (0, 0))
         game_surface.blit(fon_maze, (0, 0))
@@ -225,24 +249,18 @@ if __name__ == '__main__':
         if not is_collide(*direction):
             player_rect.move_ip(direction)
 
-        if not enemy_is_collide(*enemy_direction):
-            enemy_rect.move_ip(enemy_direction)
-        else:
-            x = random.choice((-1, 0, 1))
-            if x == 0:
-                y = random.choice((-1, 1))
-            else:
-                y = 0
-            enemy_direction = (x, y)
+        for i in range(level):
+            enemy[i].enemy_direction = enemy[i].enemy_move(enemy[i].enemy_direction)
+            if player_rect.colliderect(enemy[i].enemy_rect):
+                pygame.quit()
 
-        if player_rect.colliderect(enemy_rect):
-            pygame.quit()
         # draw maze
         [cell.draw(game_surface) for cell in maze]
 
         # draw player
         game_surface.blit(player_img, player_rect)
-        game_surface.blit(enemy_img, enemy_rect)
+        for i in range(level):
+            game_surface.blit(enemy[i].enemy_img, enemy[i].enemy_rect)
         game_surface.blit(Exit, (WIDTH - 40, HEIGHT - 40))
         pygame.display.flip()
         clock.tick(FPS)
