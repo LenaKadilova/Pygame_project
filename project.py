@@ -23,6 +23,19 @@ def load_image(name, colorkey=None):
     image = pygame.image.load(fullname)
     return image
 
+def get_background(back_name):
+    con = sqlite3.connect("boars.sqlite")
+    cur = con.cursor()
+    picture = cur.execute("""SELECT number, pict FROM pictures WHERE name = ?""",
+                               (back_name,)).fetchone()[1]
+    con.commit()
+    con.close()
+
+    # Преобразование двоичных данных в объект изображения
+    image = Image.open(BytesIO(picture))
+    # Сохранение изображения в формате PNG
+    image.save(back_name + ".png", "PNG")
+    return back_name + ".png"
 
 def terminate():
     pygame.quit()
@@ -32,7 +45,7 @@ def terminate():
 def start_screen():
     global level
     intro_text = ["КоBun"]
-    fon = pygame.transform.scale(load_image('кобан2D.png'), (WIDTH, HEIGHT))
+    fon = pygame.transform.scale(load_image(get_background("start")), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 180)
     text_coord = 280
@@ -112,19 +125,20 @@ def get_level(mouse_pos):
 
 def end_screen(result):
     if result == 1:
-        intro_text = ["You win"]
+        intro_text = ["YOU WIN"]
+        fon = pygame.transform.scale(load_image(get_background("win")), (WIDTH, HEIGHT))
     elif result == -1:
-        intro_text = ["You lose"]
-    fon = pygame.transform.scale(load_image('кобан2D.png'), (WIDTH, HEIGHT))
+        intro_text = [""]
+        fon = pygame.transform.scale(load_image(get_background("loss")), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 180)
-    text_coord = 280
+    text_coord = 80
     for line in intro_text:
         string_rendered = font.render(line, 1, pygame.Color('white'))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
-        intro_rect.x = 145
+        intro_rect.x = 85
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
 
@@ -251,23 +265,36 @@ def game_over(result):
         print('loser')
         end_screen(-1)
 
+def get_hleb():
+    global player_speed
+    con = sqlite3.connect("boars.sqlite")
+    cur = con.cursor()
+    picture = cur.execute("""SELECT speed, pict FROM pictures WHERE name = 'hleb'""").fetchone()
+    con.commit()
+    con.close()
+
+    player_speed = picture[0]
+    # Преобразование двоичных данных в объект изображения
+    image = Image.open(BytesIO(picture[1]))
+    # Сохранение изображения в формате PNG
+    image.save("hleb.png", "PNG")
+    return "hleb.png"
 
 game_surface = pygame.Surface(RES)
 surface = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 
 # use images
-fon_maze = load_image('grass.jpg')
+fon_maze = load_image(get_background("grass"))
 
 # get maze
 maze = generate_maze()
 
-Exit = load_image('exit.png').convert_alpha()
+Exit = load_image(get_background("exit")).convert_alpha()
 Exit = pygame.transform.scale(Exit, (TILE - 1 * maze[0].thickness, TILE - 1 * maze[0].thickness))
 
 # player settings
-player_speed = 6
-player_img = load_image('hleb.png')
+player_img = load_image(get_hleb())
 player_img = pygame.transform.scale(player_img, (TILE - 2 * maze[0].thickness, TILE - 2 * maze[0].thickness))
 player_rect = player_img.get_rect()
 player_rect.center = TILE // 2, TILE // 2
