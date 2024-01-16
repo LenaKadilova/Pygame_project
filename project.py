@@ -23,11 +23,13 @@ def load_image(name, colorkey=None):
     image = pygame.image.load(fullname)
     return image
 
+
+# Загрузка изображений из бд
 def get_background(back_name):
     con = sqlite3.connect("boars.sqlite")
     cur = con.cursor()
     picture = cur.execute("""SELECT number, pict FROM pictures WHERE name = ?""",
-                               (back_name,)).fetchone()[1]
+                          (back_name,)).fetchone()[1]
     con.commit()
     con.close()
 
@@ -37,10 +39,14 @@ def get_background(back_name):
     image.save(back_name + ".png", "PNG")
     return back_name + ".png"
 
+
+# Закрытие программы
 def terminate():
     pygame.quit()
     sys.exit()
 
+
+# Начальное окно выбора уровня
 def start_screen():
     global level
     intro_text = ["КоBun"]
@@ -103,9 +109,12 @@ def start_screen():
                 level = get_level(event.pos)
                 if level != -1:
                     return
+
         pygame.display.flip()
         clock.tick(FPS)
 
+
+# Обработка нажатия кнопок выбора уровня
 def get_level(mouse_pos):
     x, y = mouse_pos
     if x >= 20 and x <= 141 and y >= 623 and y <= 703:
@@ -121,6 +130,8 @@ def get_level(mouse_pos):
     else:
         return -1
 
+
+# Окно окончания игры
 def end_screen(result):
     if result == 1:
         intro_text = ["YOU WIN"]
@@ -173,6 +184,8 @@ def end_screen(result):
         pygame.display.flip()
         clock.tick(FPS)
 
+
+# Обработка нажатия кнопок "restart" и "exit"
 def get_button_press(mouse_pos):
     x, y = mouse_pos
     if x >= 140 and x <= 340 and y >= 653 and y <= 713:
@@ -183,6 +196,7 @@ def get_button_press(mouse_pos):
         return -1
 
 
+# Отрисовка поля
 class Cell:
     def __init__(self, x, y):
         self.x, self.y = x, y
@@ -221,6 +235,7 @@ class Cell:
             return False
         return self.grid_cells[find_index(x, y)]
 
+    # Проверка соседних клеток
     def check_neighbors(self, grid_cells):
         self.grid_cells = grid_cells
         neighbors = []
@@ -242,15 +257,19 @@ class Cell:
             return False
 
 
+# Удаление лишних стен
 def remove_walls(current, next):
     dx = current.x - next.x
+
     if dx == 1:
         current.walls['left'] = False
         next.walls['right'] = False
     elif dx == -1:
         current.walls['right'] = False
         next.walls['left'] = False
+
     dy = current.y - next.y
+
     if dy == 1:
         current.walls['top'] = False
         next.walls['bottom'] = False
@@ -259,6 +278,7 @@ def remove_walls(current, next):
         next.walls['top'] = False
 
 
+# Генерация лабиринта
 def generate_maze():
     grid_cells = [Cell(col, row) for row in range(rows) for col in range(cols)]
     current_cell = grid_cells[0]
@@ -285,6 +305,8 @@ def is_collide(x, y):
         return False
     return True
 
+
+# Окончание игры
 def game_over(result):
     if result == 0:
         pass
@@ -295,6 +317,8 @@ def game_over(result):
         print('loser')
         return end_screen(-1)
 
+
+# Загрузка изображения колобка из бд
 def get_hleb():
     global player_speed
     con = sqlite3.connect("boars.sqlite")
@@ -310,8 +334,10 @@ def get_hleb():
     image.save("hleb.png", "PNG")
     return "hleb.png"
 
+
 game_surface = pygame.Surface(RES)
 surface = pygame.display.set_mode((WIDTH, HEIGHT))
+
 clock = pygame.time.Clock()
 
 # use images
@@ -326,8 +352,10 @@ Exit = pygame.transform.scale(Exit, (TILE - 1 * maze[0].thickness, TILE - 1 * ma
 # player settings
 player_img = load_image(get_hleb())
 player_img = pygame.transform.scale(player_img, (TILE - 2 * maze[0].thickness, TILE - 2 * maze[0].thickness))
+
 player_rect = player_img.get_rect()
 player_rect.center = TILE // 2, TILE // 2
+
 directions = {'a': (-player_speed, 0), 'd': (player_speed, 0), 'w': (0, -player_speed), 's': (0, player_speed)}
 keys = {'a': pygame.K_a, 'd': pygame.K_d, 'w': pygame.K_w, 's': pygame.K_s}
 direction = (0, 0)
@@ -336,23 +364,27 @@ direction = (0, 0)
 walls_collide_list = sum([cell.get_rects() for cell in maze], [])
 
 
-class Enemy:  # Кабан
+# Враги
+class Enemy:
     def __init__(self, numb):
         self.enemy_img = load_image(self.get_picture(numb))
         self.enemy_img = pygame.transform.scale(self.enemy_img, (TILE - 2 * maze[0].thickness,
                                                                  TILE - 2 * maze[0].thickness))
+
         self.enemy_rect = self.enemy_img.get_rect()
         self.enemy_rect.center = TILE // 2, TILE // 2
 
         self.enemy_rect.move_ip(random.randint(3, rows - 1) * TILE, random.randint(3, cols - 1) * TILE)
         self.enemy_direction = (self.speed * 1, 0)
 
+    # Столкновение
     def enemy_is_collide(self, x, y):
         tmp_rect = self.enemy_rect.move(x, y)
         if tmp_rect.collidelist(walls_collide_list) == -1:
             return False
         return True
 
+    # Движение врагов
     def enemy_move(self, enemy_direction):
         if not self.enemy_is_collide(*enemy_direction):
             self.enemy_rect.move_ip(enemy_direction)
@@ -368,6 +400,7 @@ class Enemy:  # Кабан
             enemy_direction = (self.speed * x, self.speed * y)
         return enemy_direction
 
+    # Загрузка изображений врагов из бд
     def get_picture(self, numb):
         self.con = sqlite3.connect("boars.sqlite")
         self.cur = self.con.cursor()
@@ -384,76 +417,43 @@ class Enemy:  # Кабан
         return "enemy.png"
 
 
+# Случайный выбор животных
 def init_random(level):
     random_space = []
+
     for i in range(level):
         random_space.append(random.choice((1, 2, 3, 4)))
-    print(random_space)
     return random_space
+
 
 if __name__ == '__main__':
     pygame.init()
     size = WIDTH, HEIGHT = 723, 723
     screen = pygame.display.set_mode(size)
-    clock = pygame.time.Clock()
-    start_screen()
+    button_end = 1
+    while button_end == 1:
+        # player settings
+        player_img = load_image(get_hleb())
+        player_img = pygame.transform.scale(player_img, (TILE - 2 * maze[0].thickness,
+                                                         TILE - 2 * maze[0].thickness))
 
-    enemy = []
-    enemy_numbers = init_random(level)
-    for i in range(level):
-        enemy.append(Enemy(enemy_numbers[i]))
-    flag = True
-    while flag:
-        surface.blit(game_surface, (0, 0))
-        game_surface.blit(fon_maze, (0, 0))
+        player_rect = player_img.get_rect()
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                button_end = game_over(0)
-                flag = False
-                break
-            if player_rect[0] >= WIDTH - 55 and player_rect[1] >= HEIGHT - 55:
-                print("YES")
-                button_end = game_over(1)
-                flag = False
-                break
+        player_rect.center = TILE // 2, TILE // 2
+        directions = {'a': (-player_speed, 0), 'd': (player_speed, 0), 'w': (0, -player_speed), 's': (0, player_speed)}
+        keys = {'a': pygame.K_a, 'd': pygame.K_d, 'w': pygame.K_w, 's': pygame.K_s}
+        direction = (0, 0)
 
-        # controls and movement
-        pressed_key = pygame.key.get_pressed()
-        for key, key_value in keys.items():
-            if pressed_key[key_value] and not is_collide(*directions[key]):
-                direction = directions[key]
-                break
-        if not is_collide(*direction):
-            player_rect.move_ip(direction)
-
-        for i in range(level):
-            enemy[i].enemy_direction = enemy[i].enemy_move(enemy[i].enemy_direction)
-            if player_rect.colliderect(enemy[i].enemy_rect):
-                button_end = game_over(-1)
-                flag = False
-                break
-
-        # draw maze
-        [cell.draw(game_surface) for cell in maze]
-
-        # draw player
-        game_surface.blit(player_img, player_rect)
-
-        for i in range(level):
-            game_surface.blit(enemy[i].enemy_img, enemy[i].enemy_rect)
-        game_surface.blit(Exit, (WIDTH - 40, HEIGHT - 40))
-        pygame.display.flip()
-        clock.tick(FPS)
-    print(999, button_end)
-    if button_end == 1:
+        clock = pygame.time.Clock()
         start_screen()
 
         enemy = []
         enemy_numbers = init_random(level)
         for i in range(level):
             enemy.append(Enemy(enemy_numbers[i]))
+
         flag = True
+
         while flag:
             surface.blit(game_surface, (0, 0))
             game_surface.blit(fon_maze, (0, 0))
@@ -464,7 +464,6 @@ if __name__ == '__main__':
                     flag = False
                     break
                 if player_rect[0] >= WIDTH - 55 and player_rect[1] >= HEIGHT - 55:
-                    print("YES")
                     button_end = game_over(1)
                     flag = False
                     break
@@ -475,6 +474,7 @@ if __name__ == '__main__':
                 if pressed_key[key_value] and not is_collide(*directions[key]):
                     direction = directions[key]
                     break
+
             if not is_collide(*direction):
                 player_rect.move_ip(direction)
 
@@ -496,4 +496,5 @@ if __name__ == '__main__':
             game_surface.blit(Exit, (WIDTH - 40, HEIGHT - 40))
             pygame.display.flip()
             clock.tick(FPS)
+
     pygame.quit()
