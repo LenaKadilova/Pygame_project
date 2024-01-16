@@ -63,6 +63,7 @@ def start_screen():
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
 
+    # Отрисовка кнопок для выбора уровня игры
     pygame.draw.rect(screen, pygame.Color("white"), (20, 623, 120, 80), 0)
     pygame.draw.rect(screen, pygame.Color("white"), (161, 623, 120, 80), 0)
     pygame.draw.rect(screen, pygame.Color("white"), (302, 623, 120, 80), 0)
@@ -117,16 +118,22 @@ def start_screen():
 # Обработка нажатия кнопок выбора уровня
 def get_level(mouse_pos):
     x, y = mouse_pos
+    # 1 уровень
     if x >= 20 and x <= 141 and y >= 623 and y <= 703:
         return 1
+    # 2 уровень
     elif x >= 161 and x <= 281 and y >= 623 and y <= 703:
         return 2
+    # 3 уровень
     elif x >= 302 and x <= 422 and y >= 623 and y <= 703:
         return 3
+    # 4 уровень
     elif x >= 443 and x <= 563 and y >= 623 and y <= 703:
         return 4
+    # 5 уровень
     elif x >= 584 and x <= 684 and y >= 623 and y <= 703:
         return 5
+    # Нажатие не на кнопку
     else:
         return -1
 
@@ -151,6 +158,7 @@ def end_screen(result):
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
 
+    # Отрисовка кнопок "restart" и "exit"
     pygame.draw.rect(screen, pygame.Color("white"), (140, 653, 200, 60), 0)
     pygame.draw.rect(screen, pygame.Color("black"), (140, 653, 200, 60), 3)
     pygame.draw.rect(screen, pygame.Color("white"), (383, 653, 200, 60), 0)
@@ -188,10 +196,13 @@ def end_screen(result):
 # Обработка нажатия кнопок "restart" и "exit"
 def get_button_press(mouse_pos):
     x, y = mouse_pos
+    # Нажатие на кнопку "restart"
     if x >= 140 and x <= 340 and y >= 653 and y <= 713:
         return 1
+    # Нажатие на кнопку "exit"
     elif x >= 383 and x <= 583 and y >= 653 and y <= 713:
         return 0
+    # Нажатие не на кнопку
     else:
         return -1
 
@@ -204,6 +215,7 @@ class Cell:
         self.visited = False
         self.thickness = 4
 
+    # Отрисовка стен лабиринта
     def draw(self, sc):
         x, y = self.x * TILE, self.y * TILE
 
@@ -299,6 +311,7 @@ def generate_maze():
     return grid_cells
 
 
+# Обработка столкновений
 def is_collide(x, y):
     tmp_rect = player_rect.move(x, y)
     if tmp_rect.collidelist(walls_collide_list) == -1:
@@ -333,35 +346,6 @@ def get_hleb():
     # Сохранение изображения в формате PNG
     image.save("hleb.png", "PNG")
     return "hleb.png"
-
-
-game_surface = pygame.Surface(RES)
-surface = pygame.display.set_mode((WIDTH, HEIGHT))
-
-clock = pygame.time.Clock()
-
-# use images
-fon_maze = load_image(get_background("grass"))
-
-# get maze
-maze = generate_maze()
-
-Exit = load_image(get_background("exit")).convert_alpha()
-Exit = pygame.transform.scale(Exit, (TILE - 1 * maze[0].thickness, TILE - 1 * maze[0].thickness))
-
-# player settings
-player_img = load_image(get_hleb())
-player_img = pygame.transform.scale(player_img, (TILE - 2 * maze[0].thickness, TILE - 2 * maze[0].thickness))
-
-player_rect = player_img.get_rect()
-player_rect.center = TILE // 2, TILE // 2
-
-directions = {'a': (-player_speed, 0), 'd': (player_speed, 0), 'w': (0, -player_speed), 's': (0, player_speed)}
-keys = {'a': pygame.K_a, 'd': pygame.K_d, 'w': pygame.K_w, 's': pygame.K_s}
-direction = (0, 0)
-
-# collision list
-walls_collide_list = sum([cell.get_rects() for cell in maze], [])
 
 
 # Враги
@@ -432,17 +416,33 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode(size)
     button_end = 1
     while button_end == 1:
+        game_surface = pygame.Surface(RES)
+        surface = pygame.display.set_mode((WIDTH, HEIGHT))
+
+        clock = pygame.time.Clock()
+
+        # use images
+        fon_maze = load_image(get_background("grass"))
+
+        # get maze
+        maze = generate_maze()
+
+        Exit = load_image(get_background("exit")).convert_alpha()
+        Exit = pygame.transform.scale(Exit, (TILE - 1 * maze[0].thickness, TILE - 1 * maze[0].thickness))
+
         # player settings
         player_img = load_image(get_hleb())
-        player_img = pygame.transform.scale(player_img, (TILE - 2 * maze[0].thickness,
-                                                         TILE - 2 * maze[0].thickness))
+        player_img = pygame.transform.scale(player_img, (TILE - 2 * maze[0].thickness, TILE - 2 * maze[0].thickness))
 
         player_rect = player_img.get_rect()
-
         player_rect.center = TILE // 2, TILE // 2
+
         directions = {'a': (-player_speed, 0), 'd': (player_speed, 0), 'w': (0, -player_speed), 's': (0, player_speed)}
         keys = {'a': pygame.K_a, 'd': pygame.K_d, 'w': pygame.K_w, 's': pygame.K_s}
         direction = (0, 0)
+
+        # collision list
+        walls_collide_list = sum([cell.get_rects() for cell in maze], [])
 
         clock = pygame.time.Clock()
         start_screen()
