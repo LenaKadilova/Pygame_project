@@ -41,7 +41,6 @@ def terminate():
     pygame.quit()
     sys.exit()
 
-
 def start_screen():
     global level
     intro_text = ["КоBun"]
@@ -102,7 +101,6 @@ def start_screen():
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
                 level = get_level(event.pos)
-                print(level)
                 if level != -1:
                     return
         pygame.display.flip()
@@ -142,15 +140,47 @@ def end_screen(result):
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
 
+    pygame.draw.rect(screen, pygame.Color("white"), (140, 653, 200, 60), 0)
+    pygame.draw.rect(screen, pygame.Color("black"), (140, 653, 200, 60), 3)
+    pygame.draw.rect(screen, pygame.Color("white"), (383, 653, 200, 60), 0)
+    pygame.draw.rect(screen, pygame.Color("black"), (383, 653, 200, 60), 3)
+
+    buttons_text = ["RESTART", "EXIT"]
+    font = pygame.font.Font(None, 55)
+    for line in range(len(buttons_text)):
+        text_coord = 657
+        string_rendered = font.render(buttons_text[line], 1, pygame.Color('black'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 153 + line * 284
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+        print(text_coord)
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
-                return
+                button = get_button_press(event.pos)
+                if button == 0:
+                    terminate()
+                if button != -1:
+                    print(button)
+                    return button
         pygame.display.flip()
         clock.tick(FPS)
+
+def get_button_press(mouse_pos):
+    x, y = mouse_pos
+    if x >= 140 and x <= 340 and y >= 653 and y <= 713:
+        return 1
+    elif x >= 383 and x <= 583 and y >= 653 and y <= 713:
+        return 0
+    else:
+        return -1
 
 
 class Cell:
@@ -260,10 +290,10 @@ def game_over(result):
         pass
     elif result == 1:
         print('winner')
-        end_screen(1)
+        return end_screen(1)
     else:
         print('loser')
-        end_screen(-1)
+        return end_screen(-1)
 
 def get_hleb():
     global player_speed
@@ -367,7 +397,7 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode(size)
     clock = pygame.time.Clock()
     start_screen()
-    # level = 1
+
     enemy = []
     enemy_numbers = init_random(level)
     for i in range(level):
@@ -379,12 +409,12 @@ if __name__ == '__main__':
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                game_over(0)
+                button_end = game_over(0)
                 flag = False
                 break
             if player_rect[0] >= WIDTH - 55 and player_rect[1] >= HEIGHT - 55:
                 print("YES")
-                game_over(1)
+                button_end = game_over(1)
                 flag = False
                 break
 
@@ -400,7 +430,7 @@ if __name__ == '__main__':
         for i in range(level):
             enemy[i].enemy_direction = enemy[i].enemy_move(enemy[i].enemy_direction)
             if player_rect.colliderect(enemy[i].enemy_rect):
-                game_over(-1)
+                button_end = game_over(-1)
                 flag = False
                 break
 
@@ -415,5 +445,55 @@ if __name__ == '__main__':
         game_surface.blit(Exit, (WIDTH - 40, HEIGHT - 40))
         pygame.display.flip()
         clock.tick(FPS)
+    print(999, button_end)
+    if button_end == 1:
+        start_screen()
 
+        enemy = []
+        enemy_numbers = init_random(level)
+        for i in range(level):
+            enemy.append(Enemy(enemy_numbers[i]))
+        flag = True
+        while flag:
+            surface.blit(game_surface, (0, 0))
+            game_surface.blit(fon_maze, (0, 0))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    button_end = game_over(0)
+                    flag = False
+                    break
+                if player_rect[0] >= WIDTH - 55 and player_rect[1] >= HEIGHT - 55:
+                    print("YES")
+                    button_end = game_over(1)
+                    flag = False
+                    break
+
+            # controls and movement
+            pressed_key = pygame.key.get_pressed()
+            for key, key_value in keys.items():
+                if pressed_key[key_value] and not is_collide(*directions[key]):
+                    direction = directions[key]
+                    break
+            if not is_collide(*direction):
+                player_rect.move_ip(direction)
+
+            for i in range(level):
+                enemy[i].enemy_direction = enemy[i].enemy_move(enemy[i].enemy_direction)
+                if player_rect.colliderect(enemy[i].enemy_rect):
+                    button_end = game_over(-1)
+                    flag = False
+                    break
+
+            # draw maze
+            [cell.draw(game_surface) for cell in maze]
+
+            # draw player
+            game_surface.blit(player_img, player_rect)
+
+            for i in range(level):
+                game_surface.blit(enemy[i].enemy_img, enemy[i].enemy_rect)
+            game_surface.blit(Exit, (WIDTH - 40, HEIGHT - 40))
+            pygame.display.flip()
+            clock.tick(FPS)
     pygame.quit()
