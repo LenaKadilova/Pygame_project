@@ -30,6 +30,7 @@ def terminate():
 
 
 def start_screen():
+    global level
     intro_text = ["КоBun"]
     fon = pygame.transform.scale(load_image('кобан2D.png'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
@@ -44,15 +45,70 @@ def start_screen():
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
 
+    pygame.draw.rect(screen, pygame.Color("white"), (20, 623, 120, 80), 0)
+    pygame.draw.rect(screen, pygame.Color("white"), (161, 623, 120, 80), 0)
+    pygame.draw.rect(screen, pygame.Color("white"), (302, 623, 120, 80), 0)
+    pygame.draw.rect(screen, pygame.Color("white"), (443, 623, 120, 80), 0)
+    pygame.draw.rect(screen, pygame.Color("white"), (584, 623, 120, 80), 0)
+
+    pygame.draw.rect(screen, pygame.Color("black"), (20, 623, 120, 80), 3)
+    pygame.draw.rect(screen, pygame.Color("black"), (161, 623, 120, 80), 3)
+    pygame.draw.rect(screen, pygame.Color("black"), (302, 623, 120, 80), 3)
+    pygame.draw.rect(screen, pygame.Color("black"), (443, 623, 120, 80), 3)
+    pygame.draw.rect(screen, pygame.Color("black"), (584, 623, 120, 80), 3)
+
+    pygame.draw.rect(screen, pygame.Color("white"), (161, 523, 402, 80), 0)
+    pygame.draw.rect(screen, pygame.Color("black"), (161, 523, 402, 80), 3)
+
+    line = "SELECT LEVEL"
+    font = pygame.font.Font(None, 75)
+    text_coord = 530
+    string_rendered = font.render(line, 1, pygame.Color('black'))
+    intro_rect = string_rendered.get_rect()
+    text_coord += 10
+    intro_rect.top = text_coord
+    intro_rect.x = 172
+    text_coord += intro_rect.height
+    screen.blit(string_rendered, intro_rect)
+
+    level_numbers = ["1", "2", "3", "4", "5"]
+    for i in range(len(level_numbers)):
+        text_coord = 630
+        string_rendered = font.render(level_numbers[i], 1, pygame.Color('black'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 65 + 141 * i
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
-                return
+                level = get_level(event.pos)
+                print(level)
+                if level != -1:
+                    return
         pygame.display.flip()
         clock.tick(FPS)
+
+def get_level(mouse_pos):
+    x, y = mouse_pos
+    if x >= 20 and x <= 141 and y >= 623 and y <= 703:
+        return 1
+    elif x >= 161 and x <= 281 and y >= 623 and y <= 703:
+        return 2
+    elif x >= 302 and x <= 422 and y >= 623 and y <= 703:
+        return 3
+    elif x >= 443 and x <= 563 and y >= 623 and y <= 703:
+        return 4
+    elif x >= 584 and x <= 684 and y >= 623 and y <= 703:
+        return 5
+    else:
+        return -1
 
 def end_screen(result):
     if result == 1:
@@ -231,7 +287,7 @@ class Enemy:  # Кабан
         self.enemy_rect = self.enemy_img.get_rect()
         self.enemy_rect.center = TILE // 2, TILE // 2
 
-        self.enemy_rect.move_ip(random.randint(0, rows - 1) * TILE, random.randint(0, cols - 1) * TILE)
+        self.enemy_rect.move_ip(random.randint(3, rows - 1) * TILE, random.randint(3, cols - 1) * TILE)
         self.enemy_direction = (self.speed * 1, 0)
 
     def enemy_is_collide(self, x, y):
@@ -284,7 +340,7 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode(size)
     clock = pygame.time.Clock()
     start_screen()
-    level = 5
+    # level = 1
     enemy = []
     enemy_numbers = init_random(level)
     for i in range(level):
@@ -326,6 +382,7 @@ if __name__ == '__main__':
 
         # draw player
         game_surface.blit(player_img, player_rect)
+
         for i in range(level):
             game_surface.blit(enemy[i].enemy_img, enemy[i].enemy_rect)
         game_surface.blit(Exit, (WIDTH - 40, HEIGHT - 40))
