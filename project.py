@@ -231,7 +231,7 @@ class Enemy:  # Кабан
         self.enemy_rect = self.enemy_img.get_rect()
         self.enemy_rect.center = TILE // 2, TILE // 2
 
-        self.enemy_rect.move_ip(random.randint(0, rows) * TILE, random.randint(0, cols) * TILE)
+        self.enemy_rect.move_ip(random.randint(0, rows - 1) * TILE, random.randint(0, cols - 1) * TILE)
         self.enemy_direction = (self.speed * 1, 0)
 
     def enemy_is_collide(self, x, y):
@@ -274,7 +274,8 @@ class Enemy:  # Кабан
 def init_random(level):
     random_space = []
     for i in range(level):
-        random_space.append(random.choice((1, 2)))
+        random_space.append(random.choice((1, 2, 3, 4)))
+    print(random_space)
     return random_space
 
 if __name__ == '__main__':
