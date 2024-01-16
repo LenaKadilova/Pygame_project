@@ -1,9 +1,11 @@
 import random
-
+import sqlite3
 import pygame
 import os
 import sys
 from random import choice
+from PIL import Image
+from io import BytesIO
 
 FPS = 60
 RES = WIDTH, HEIGHT = 723, 723
@@ -29,6 +31,34 @@ def terminate():
 
 def start_screen():
     intro_text = ["КоBun"]
+    fon = pygame.transform.scale(load_image('кобан2D.png'), (WIDTH, HEIGHT))
+    screen.blit(fon, (0, 0))
+    font = pygame.font.Font(None, 180)
+    text_coord = 280
+    for line in intro_text:
+        string_rendered = font.render(line, 1, pygame.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 155
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN or \
+                    event.type == pygame.MOUSEBUTTONDOWN:
+                return
+        pygame.display.flip()
+        clock.tick(FPS)
+
+def end_screen(result):
+    if result == 1:
+        intro_text = ["You win"]
+    elif result == -1:
+        intro_text = ["You lose"]
     fon = pygame.transform.scale(load_image('кобан2D.png'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 180)
@@ -155,8 +185,15 @@ def is_collide(x, y):
         return False
     return True
 
-def is_game_over():
-    pass
+def game_over(result):
+    if result == 0:
+        pass
+    elif result == 1:
+        print('winner')
+        end_screen(1)
+    else:
+        print('loser')
+        end_screen(-1)
 
 
 game_surface = pygame.Surface(RES)
@@ -187,15 +224,15 @@ walls_collide_list = sum([cell.get_rects() for cell in maze], [])
 
 
 class Enemy:  # Кабан
-    def __init__(self):
-        self.enemy_img = load_image('кабан.png')
+    def __init__(self, numb):
+        self.enemy_img = load_image(self.get_picture(numb))
         self.enemy_img = pygame.transform.scale(self.enemy_img, (TILE - 2 * maze[0].thickness,
                                                                  TILE - 2 * maze[0].thickness))
         self.enemy_rect = self.enemy_img.get_rect()
         self.enemy_rect.center = TILE // 2, TILE // 2
 
         self.enemy_rect.move_ip(random.randint(0, rows) * TILE, random.randint(0, cols) * TILE)
-        self.enemy_direction = (1, 0)
+        self.enemy_direction = (self.speed * 1, 0)
 
     def enemy_is_collide(self, x, y):
         tmp_rect = self.enemy_rect.move(x, y)
@@ -215,9 +252,30 @@ class Enemy:  # Кабан
             else:
                 y = random.choice((-1, 1))
                 x = 0
-            enemy_direction = (x, y)
+            enemy_direction = (self.speed * x, self.speed * y)
         return enemy_direction
 
+    def get_picture(self, numb):
+        self.con = sqlite3.connect("boars.sqlite")
+        self.cur = self.con.cursor()
+        picture = self.cur.execute("""SELECT speed, pict FROM pictures WHERE number = ? AND name = 'enemy'""",
+                                   (numb, )).fetchone()
+        self.con.commit()
+        self.con.close()
+
+        self.speed = picture[0]
+        # Преобразование двоичных данных в объект изображения
+        image = Image.open(BytesIO(picture[1]))
+        # Сохранение изображения в формате PNG
+        image.save("enemy.png", "PNG")
+        return "enemy.png"
+
+
+def init_random(level):
+    random_space = []
+    for i in range(level):
+        random_space.append(random.choice((1, 2)))
+    return random_space
 
 if __name__ == '__main__':
     pygame.init()
@@ -227,18 +285,24 @@ if __name__ == '__main__':
     start_screen()
     level = 5
     enemy = []
+    enemy_numbers = init_random(level)
     for i in range(level):
-        enemy.append(Enemy())
-    while True:
+        enemy.append(Enemy(enemy_numbers[i]))
+    flag = True
+    while flag:
         surface.blit(game_surface, (0, 0))
         game_surface.blit(fon_maze, (0, 0))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
+                game_over(0)
+                flag = False
+                break
             if player_rect[0] >= WIDTH - 55 and player_rect[1] >= HEIGHT - 55:
                 print("YES")
-                pygame.quit()
+                game_over(1)
+                flag = False
+                break
 
         # controls and movement
         pressed_key = pygame.key.get_pressed()
@@ -252,7 +316,9 @@ if __name__ == '__main__':
         for i in range(level):
             enemy[i].enemy_direction = enemy[i].enemy_move(enemy[i].enemy_direction)
             if player_rect.colliderect(enemy[i].enemy_rect):
-                pygame.quit()
+                game_over(-1)
+                flag = False
+                break
 
         # draw maze
         [cell.draw(game_surface) for cell in maze]
@@ -264,3 +330,5 @@ if __name__ == '__main__':
         game_surface.blit(Exit, (WIDTH - 40, HEIGHT - 40))
         pygame.display.flip()
         clock.tick(FPS)
+
+    pygame.quit()
